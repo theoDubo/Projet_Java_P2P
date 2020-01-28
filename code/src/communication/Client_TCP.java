@@ -1,37 +1,39 @@
 package communication;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.IOException;
 import java.net.Socket;
-import java.util.Scanner;
+import java.net.UnknownHostException;
+
+import fonctionnement.ClientManager;
 
 public class Client_TCP {
-	
-	public static void main(String[] args) throws Exception {
-		byte[] tampon = new byte[1024];
-		// Création d'un socket UDP sur un port choisi par le système
-		Socket socket = new Socket("localhost",40000);
+	private String racine;
+	private Socket socket;
 
-		BufferedReader entreeSocket = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		PrintStream sortieSocket= new PrintStream(socket.getOutputStream());
-		
-		// Scanner sur System.in
-		Scanner scanner = new Scanner(System.in);
-		
-		String chaine = "",capture;
-		
-		while(!chaine.equalsIgnoreCase("FIN")) {
-			System.out.println("Tapez vos commandes ou FIN pour arrêter :");
-			// lecture clavier
-			chaine = scanner.nextLine();
-			sortieSocket.println(chaine);//envoi d'une chaine de caractère
-			capture=entreeSocket.readLine();
-			System.out.println(capture);
-			
-			
-		}
+	public void connect() throws UnknownHostException, IOException {
+		socket = new Socket("localhost",40000);
+		System.out.println("Connexion...");
+	}
+
+	public String getracine() {
+		return racine;
+	}
+	
+	public Socket getSocket() {
+		return socket;
+	}
+
+	//set le fichier racine avec un chemin relatif
+	public void setRacine(String r) throws Exception { 
+		if (r.charAt(0)!='.' && r.charAt(r.length())!='/') throw new Exception("invalid path definition");
+		else racine =r;
+	}
+	
+	public void main() {
+		Thread t = new Thread(new ClientManager(this));
+		t.start();
+	}
+	
+	public void deconnect() throws IOException {
 		socket.close();
-		scanner.close();
-		entreeSocket.close();
 	}
 }

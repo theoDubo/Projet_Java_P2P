@@ -6,12 +6,15 @@ import fonctionnement.ServerManager;
 
 public class Serveur_FTP implements Serveur {
 	private ServerSocket socket ;
+	
 	public void  ecoute() throws Exception{ // fonction d'écoute du serveur 
 		// Création d'un socket server sur le port 40000
 		Socket sss;
 		socket = new ServerSocket(40000);		
 		while(true) {
+			System.out.println("En attente ...");
 			sss = socket.accept(); 
+			System.out.println("connexion acceptee : "+sss);
 			Thread t = new Thread(new ServerManager(sss, this)); // création d'un thread par client lié à un socket
 			t.start();
 		}

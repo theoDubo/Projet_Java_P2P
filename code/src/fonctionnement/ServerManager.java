@@ -15,8 +15,7 @@ import communication.Serveur_FTP;
 public class ServerManager implements Runnable {
 	Socket socket;
 	Serveur_FTP serveur;
-	Byte[] tampon= new Byte[1024];
-	String root="/home/theo/eclipse-workspace/Projet_java_P2P/Serveur/";
+	String root="./dossierServeur/";
 
 	public ServerManager(Socket socket, Serveur_FTP serveur) {
 		super();
@@ -54,27 +53,44 @@ public class ServerManager implements Runnable {
 	public int get(String nomFichier,Socket sss) { // fonction de récupération d'un fichier
 		int il;
 		String nomF =root+nomFichier;
-		byte[] tampon = new byte[1024];
 		try {
-		    // Le FileReader ouvre le fichier
+			//ouverture du fichier
+			File fich = new File(nomF);
+			
+			//création du tampon de la taille du fichier (à éventuellement remplacé par datagramme par la suite)
+			byte [] tampon = new byte [(int)fich.length()];
+		    
+			// on défini les bytes du fichier 
 		    FileInputStream fr = new FileInputStream(nomF);
+
 		    // Le BufferReader charge le contenu du fichier
 		    BufferedInputStream br = new BufferedInputStream(fr);
+		    
 		    //construction d'un printStream pour envoyer du texte à travers la connexion socket
 		    PrintStream sortieSocket = new PrintStream(sss.getOutputStream());
-		    // On récupère la première ligne du fichier
-		    il = br.read(tampon) ;
+		    
+		    // On récupère le tampon dans le fichier
+		    il = br.read(tampon,0,tampon.length) ;
 		    if (il < 0) {
 		    	br.close();
 		    	return -1;
 		    }
-		    // Tant que le fichier n'est pas finis
+		    
+		    /* pour la partie datagramme
 		    while( il > 0 ) {
 		        // Et on lit la suivante
 		        il = br.read(tampon) ;
-		        sortieSocket.print(br);
+		        sortieSocket.print(tampon);
 		    }
+		    */
+		    
+		    //envoi
+		    System.out.println("Envoi ...");
+		    sortieSocket.print(tampon);
+		    
+
 		    // Ne pas oublier de fermer le BufferedReader
+		    sortieSocket.flush();
 		    br.close() ;
 		}
 		// Gere les execptions
