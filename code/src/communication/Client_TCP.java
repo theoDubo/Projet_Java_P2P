@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 
 import fonctionnement.ClientManager;
 
-public class Client_TCP {
+public class Client_TCP implements Client {
 	private String racine;
 	private Socket socket;
 
@@ -28,8 +28,16 @@ public class Client_TCP {
 		else racine =r;
 	}
 	
-	public void main() {
-		Thread t = new Thread(new ClientManager(this));
+	public static void main(String[] args) {
+		Client_TCP client = new Client_TCP();
+		try {
+			client.connect();
+			client.setRacine("./dossierClient/");
+		} catch ( Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Thread t = new Thread(new ClientManager(client));
 		t.start();
 	}
 	

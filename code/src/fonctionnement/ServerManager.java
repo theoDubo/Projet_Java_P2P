@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.Scanner;
 
 import communication.Serveur_FTP;
 
@@ -27,9 +28,9 @@ public class ServerManager implements Runnable {
 	private void menu(Socket sss)throws Exception { //manque l'ajout de fonction mais sinon ça marche
 		// TODO Auto-generated method stub		
 		BufferedReader entreeSocket = new BufferedReader(new InputStreamReader(sss.getInputStream()));
-		
 		//lecture d'une chaine envoyé par le client
 		String chaine = entreeSocket.readLine();
+		if (chaine==null) return;
 		int tst;
 		String[] var;
 		while (!chaine.equals("FIN")) {
@@ -68,6 +69,8 @@ public class ServerManager implements Runnable {
 		    
 		    //construction d'un printStream pour envoyer du texte à travers la connexion socket
 		    PrintStream sortieSocket = new PrintStream(sss.getOutputStream());
+		    //envoi de la taille du fichier
+		    sortieSocket.print(fich.length());
 		    
 		    // On récupère le tampon dans le fichier
 		    il = br.read(tampon,0,tampon.length) ;
@@ -86,8 +89,9 @@ public class ServerManager implements Runnable {
 		    
 		    //envoi
 		    System.out.println("Envoi ...");
-		    sortieSocket.print(tampon);
-		    
+		    sortieSocket.print(tampon.toString());
+		    System.out.println("fin Envoi. ") ;
+
 
 		    // Ne pas oublier de fermer le BufferedReader
 		    sortieSocket.flush();
