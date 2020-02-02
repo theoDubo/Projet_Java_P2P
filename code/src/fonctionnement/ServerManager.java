@@ -26,18 +26,18 @@ public class ServerManager implements Runnable {
 	}
 
 
-	private void menu(Socket sss)throws Exception { //manque l'ajout de fonction mais sinon ça marche
+	private void menu(Socket sss)throws Exception { //manque l'ajout de fonction mais sinon Ã§a marche
 		// TODO Auto-generated method stub		
 		BufferedReader entreeSocket = new BufferedReader(new InputStreamReader(sss.getInputStream()));
 
-		//lecture d'une chaine envoyé par le client
-		String chaine;
+		//lecture d'une chaine envoyÃ© par le client
+		String chaine="";
 		int tst;
 		String[] var;
 		do {
-			chaine = entreeSocket.readLine();
-			//vérification que la chaine ai au moins 2 paramètres
-			if (chaine.equals("Fin")) {
+			while ((chaine = entreeSocket.readLine())==null);
+			//vÃ©rification que la chaine ai au moins 2 paramÃ¨tres
+			if (!chaine.equals("FIN")) {
 				if (chaine.indexOf(" ")<0)throw new Exception("invalid parameter number");
 				var=chaine.split(" ");
 				switch(var[0]) {
@@ -46,7 +46,7 @@ public class ServerManager implements Runnable {
 					tst = get(var[1],sss);
 					if (tst<0)throw new Exception("get Exception, failed");
 					break;
-					// les autres fonctions d'utilisations éventuels
+					// les autres fonctions d'utilisations Ã©ventuels
 				}
 			}
 		}while (!chaine.equals("FIN"));
@@ -54,63 +54,40 @@ public class ServerManager implements Runnable {
 	}
 
 
-	public int get(String nomFichier,Socket sss) { // fonction de récupération d'un fichier
+	public int get(String nomFichier,Socket sss) throws IOException { // fonction de rÃ©cupÃ©ration d'un fichier
 		String nomF =root+nomFichier;
-		try {
-			//ouverture du fichier
-			File fich = new File(nomF);
+		//ouverture du fichier
+		File fich = new File(nomF);
+		OutputStream os = socket.getOutputStream();
+		
+		
+		/*if (!fich.exists())	os.write(0);
+		else os.write(1);
+		*/
+		
+		
+		//crÃ©ation du tampon de la taille du fichier (Ã  Ã©ventuellement remplacÃ© par datagramme par la suite)
+		byte [] tableaudebytes  = new byte [(int)fich.length()];
+		
+		//os.write((int)fich.length());
+		
+		// Lecture des bytes du fichier
+		FileInputStream fis = new FileInputStream(fich);
 
-			//création du tampon de la taille du fichier (à éventuellement remplacé par datagramme par la suite)
-			byte [] tampon = new byte [(int)fich.length()];
+		// Permet de faire transiter les bytes
+		BufferedInputStream bis = new BufferedInputStream(fis);
 
-			// on défini les bytes du fichier 
-			FileInputStream fr = new FileInputStream(fich);
+		// Lecture des bytes de ce flux d'entrée de byte dans le tableau tableaudebyte à 0
+		bis.read(tableaudebytes,0,tableaudebytes.length);
 
-			// Le BufferReader charge le contenu du fichier
-			BufferedInputStream br = new BufferedInputStream(fr);
+		// On envoi ça au socket
 
-			//construction d'un printStream pour envoyer du texte à travers la connexion socket
-			OutputStream os = socket.getOutputStream();
+		System.out.println("Envoi...");
 
-			//envoi de la taille du fichier - ça n'a pas l'air de marcher
-			os.write((int)fich.length());
+		// Ecriture des bytes dans l'outputstream
+		os.write(tableaudebytes,0,tableaudebytes.length);
+		os.flush();
 
-			// Lecture des bytes de ce flux d'entrée de byte dans le tableau tableaudebyte à 0
-			br.read(tampon,0,tampon.length);
-
-
-			// On récupère le tampon dans le fichier
-			os.write(tampon,0,tampon.length) ;
-
-			/* pour la partie datagramme
-		    while( il > 0 ) {
-		        // Et on lit la suivante
-		        il = br.read(tampon) ;
-		        sortieSocket.print(tampon);
-		    }
-			 */
-
-			//envoi
-			System.out.println("Envoi ...");
-			os.write(tampon,0,tampon.length);
-			System.out.println("fin Envoi. ") ;
-
-
-			// Ne pas oublier de fermer le BufferedReader
-			os.flush();
-
-			br.close();
-			os.flush();
-		}
-		// Gere les execptions
-		catch(FileNotFoundException e) {
-			e.printStackTrace();
-			return -1;
-		}
-		catch(IOException e) {
-			e.printStackTrace();
-			return -1;
-		}
 		return 0;
 	}
 
@@ -122,6 +99,7 @@ public class ServerManager implements Runnable {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			this.run();
 		}
 	}
 
