@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.util.Scanner;
 
+
 import communication.Client_TCP;
 
 public class ClientManager implements Runnable {
@@ -19,15 +20,13 @@ public class ClientManager implements Runnable {
 		this.client = client;
 	}
 
-	
-	public String ByteToSt(InputStream entreeSocket) throws Exception{
-		 BufferedReader reader = new BufferedReader(new InputStreamReader(entreeSocket));
-         StringBuffer sb = new StringBuffer();
-         String str;
-         while((str = reader.readLine())!= null){
-            sb.append(str);
-         }
-         return sb.toString();
+	public String ByteToSt(byte[] tampon){
+		String chaine="";
+		int fraise=0xff;
+		for (int i =0; i<tampon.length;i++) {
+			chaine=chaine + ((int)tampon[i]&fraise);
+		}
+		return chaine;
 	}
 	
 	public void get(String var) throws Exception {
@@ -37,41 +36,37 @@ public class ClientManager implements Runnable {
 		byte[] tampon = new byte[550000];
 
 
-		
-		/*if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception file exist fail");
 
-		if (Integer.valueOf(ByteToSt(entreeSocket))!=1)throw new Exception("file does not exist");
-				pour recevoir la taille du fichier pour crÃ©er  le fichier ------------- Ã  voir avec le professeur tout Ã  l'heure
+		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception file exist fail");
+
+		if (Integer.valueOf(ByteToSt(tampon))!=1)throw new Exception("file does not exist");
+		//		pour recevoir la taille du fichier pour crÃ©er  le fichier ------------- Ã  voir avec le professeur tout Ã  l'heure
 		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception length fail");
-		
-		int value; 
-		if ((value =Integer.valueOf(ByteToSt(entreeSocket))) <0) throw new Exception("Not a number exception");
-		tampon = new byte[Integer.valueOf(value)];
-*/
-		System.out.println("it's running babe");
 
+		int value; 
+		if ((value =Integer.valueOf(ByteToSt(tampon))) <0) throw new Exception("Not a number exception");
+		tampon = new byte[Integer.valueOf(value)];
+		 
 		//ouverture du stream permettant d'ecrire le fichier - ok 
 		FileOutputStream fos = new FileOutputStream(client.getracine()+var);
 		BufferedOutputStream bos = new BufferedOutputStream(fos);
 		System.out.println("file created");
-		
+
 		// Tant que le nombre de bytes lues est positif ou nul
 		bytesRead = entreeSocket.read(tampon,0,tampon.length);
 		System.out.println("bit lues "+bytesRead);
 		current = bytesRead;
-/*		// Tant que le nombre de bytes lues est positif ou nul
+		/*		// Tant que le nombre de bytes lues est positif ou nul
 		do {
 			bytesRead = entreeSocket.read(tampon, current, (tampon.length-current));
 			if(bytesRead >= 0) current += bytesRead;
 		} while(bytesRead > -1);
-		*/
+		 */
 		// Lecture des bytes de ce flux de sortie de bytes dans le tableau tableaudebyte ï¿½ 0
 		bos.write(tampon,0,tampon.length);
 		bos.flush();
 		bos.close();
 	}
-
-
 
 
 
@@ -109,17 +104,6 @@ public class ClientManager implements Runnable {
 	}
 
 
-
-
-
-
-
-
-
-
-
-
-
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -131,6 +115,7 @@ public class ClientManager implements Runnable {
 			this.run();
 		}
 	}
+
 }
 
 

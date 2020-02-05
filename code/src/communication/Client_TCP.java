@@ -17,7 +17,7 @@ public class Client_TCP implements Client {
 	public String getracine() {
 		return racine;
 	}
-	
+
 	public Socket getSocket() {
 		return socket;
 	}
@@ -27,7 +27,7 @@ public class Client_TCP implements Client {
 		if (r.charAt(0)!='.' && r.charAt(r.length())!='/') throw new Exception("invalid path definition");
 		else racine =r;
 	}
-	
+
 	public static void main(String[] args) {
 		Client_TCP client = new Client_TCP();
 		try {
@@ -40,7 +40,7 @@ public class Client_TCP implements Client {
 		Thread t = new Thread(new ClientManager(client));
 		t.start();
 	}
-	
+
 	public void deconnect() throws IOException {
 		socket.close();
 	}

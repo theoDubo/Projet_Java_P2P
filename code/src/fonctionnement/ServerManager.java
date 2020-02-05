@@ -61,15 +61,15 @@ public class ServerManager implements Runnable {
 		OutputStream os = socket.getOutputStream();
 		
 		
-		/*if (!fich.exists())	os.write(0);
+		if (!fich.exists())	os.write(0);
 		else os.write(1);
-		*/
+		
 		
 		
 		//crÃ©ation du tampon de la taille du fichier (Ã  Ã©ventuellement remplacÃ© par datagramme par la suite)
 		byte [] tableaudebytes  = new byte [(int)fich.length()];
 		
-		//os.write((int)fich.length());
+		os.write((int)fich.length());
 		
 		// Lecture des bytes du fichier
 		FileInputStream fis = new FileInputStream(fich);
