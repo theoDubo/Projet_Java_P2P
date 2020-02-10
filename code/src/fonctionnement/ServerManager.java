@@ -42,7 +42,7 @@ public class ServerManager implements Runnable {
 				var=chaine.split(" ");
 				switch(var[0]) {
 				case "get":
-					if (var.length>2) throw new Exception("invalid parameter number");
+	/* à modifier*/	if (var.length>2) throw new Exception("invalid parameter number");
 					tst = get(var[1],sss);
 					if (tst<0)throw new Exception("get Exception, failed");
 					break;
@@ -76,7 +76,6 @@ public class ServerManager implements Runnable {
 
 		// Permet de faire transiter les bytes
 		BufferedInputStream bis = new BufferedInputStream(fis);
-
 		// Lecture des bytes de ce flux d'entrée de byte dans le tableau tableaudebyte à 0
 		bis.read(tableaudebytes,0,tableaudebytes.length);
 

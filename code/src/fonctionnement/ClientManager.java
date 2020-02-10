@@ -33,13 +33,13 @@ public class ClientManager implements Runnable {
 		int bytesRead,current=0;
 		InputStream entreeSocket =client.getSocket().getInputStream();
 		if (var==null ) throw new Exception("invalid parameter number");
-		byte[] tampon = new byte[550000];
+		byte[] tampon = new byte[8];
 
 
 
 		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception file exist fail");
-
-		if (Integer.valueOf(ByteToSt(tampon))!=1)throw new Exception("file does not exist");
+		if (ByteToSt(tampon).contentEquals("1"))throw new Exception("file does not exist");
+		System.out.println("est ce que ça a marché");
 		//		pour recevoir la taille du fichier pour crÃ©er  le fichier ------------- Ã  voir avec le professeur tout Ã  l'heure
 		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception length fail");
 
