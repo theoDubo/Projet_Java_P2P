@@ -2,6 +2,7 @@ package fonctionnement;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,6 +11,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 import communication.Serveur_FTP;
@@ -30,13 +34,13 @@ public class ServerManager implements Runnable {
 		// TODO Auto-generated method stub		
 		BufferedReader entreeSocket = new BufferedReader(new InputStreamReader(sss.getInputStream()));
 
-		//lecture d'une chaine envoyÃ© par le client
+		//lecture d'une chaine envoyee par le client
 		String chaine="";
 		int tst;
 		String[] var;
 		do {
 			while ((chaine = entreeSocket.readLine())==null);
-			//vÃ©rification que la chaine ai au moins 2 paramÃ¨tres
+			//verification que la chaine ai au moins 2 parametres
 			if (!chaine.equals("FIN")) {
 				if (chaine.indexOf(" ")<0)throw new Exception("invalid parameter number");
 				var=chaine.split(" ");
@@ -58,33 +62,23 @@ public class ServerManager implements Runnable {
 		String nomF =root+nomFichier;
 		//ouverture du fichier
 		File fich = new File(nomF);
-		OutputStream os = socket.getOutputStream();
+		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 		
+		//test d'existence du fichier
+		if (!fich.exists())	os.writeInt(0);
+		else os.writeInt(1);
 		
-		if (!fich.exists())	os.write(0);
-		else os.write(1);
+		// declaration du chemin du fichier et du tableau de données du fichier
+		Path fileLocation = Paths.get(nomF);
+		byte[] data = Files.readAllBytes(fileLocation);
 		
-		
-		
-		//crÃ©ation du tampon de la taille du fichier (Ã  Ã©ventuellement remplacÃ© par datagramme par la suite)
-		byte [] tableaudebytes  = new byte [(int)fich.length()];
-		
-		os.write((int)fich.length());
-		
-		// Lecture des bytes du fichier
-		FileInputStream fis = new FileInputStream(fich);
-
-		// Permet de faire transiter les bytes
-		BufferedInputStream bis = new BufferedInputStream(fis);
-		// Lecture des bytes de ce flux d'entrée de byte dans le tableau tableaudebyte à 0
-		bis.read(tableaudebytes,0,tableaudebytes.length);
-
+		os.writeInt(data.length);
 		// On envoi ça au socket
 
 		System.out.println("Envoi...");
 
 		// Ecriture des bytes dans l'outputstream
-		os.write(tableaudebytes,0,tableaudebytes.length);
+		os.write(data,0,data.length);
 		os.flush();
 
 		return 0;

@@ -1,14 +1,18 @@
 package fonctionnement;
-
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Scanner;
-
 
 import communication.Client_TCP;
 
@@ -20,52 +24,63 @@ public class ClientManager implements Runnable {
 		this.client = client;
 	}
 
-	public String ByteToSt(byte[] tampon){
-		String chaine="";
-		int fraise=0xff;
-		for (int i =0; i<tampon.length;i++) {
-			chaine=chaine + ((int)tampon[i]&fraise);
-		}
-		return chaine;
+	public boolean isFichier(DataInputStream es)throws Exception { 	//méthode qui reçoit le retour pour l'existence du fichier passer en paramètre du get
+		int value;
+		if ((value=es.readInt())<0)throw new Exception("Reception file exist fail");
+		if (value==0)return false;
+		return true;
 	}
-	
+
 	public void get(String var) throws Exception {
-		int bytesRead,current=0;
-		InputStream entreeSocket =client.getSocket().getInputStream();
+		// declaration des variables
+		// Stream de lecture de données
+		DataInputStream	entreeSocket = new DataInputStream(client.getSocket().getInputStream());
 		if (var==null ) throw new Exception("invalid parameter number");
-		byte[] tampon = new byte[8];
-
-
-
-		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception file exist fail");
-		if (ByteToSt(tampon).contentEquals("1"))throw new Exception("file does not exist");
-		System.out.println("est ce que ça a marché");
-		//		pour recevoir la taille du fichier pour crÃ©er  le fichier ------------- Ã  voir avec le professeur tout Ã  l'heure
-		if (entreeSocket.read(tampon,0,tampon.length)<0)throw new Exception("Reception length fail");
-
-		int value; 
-		if ((value =Integer.valueOf(ByteToSt(tampon))) <0) throw new Exception("Not a number exception");
-		tampon = new byte[Integer.valueOf(value)];
-		 
-		//ouverture du stream permettant d'ecrire le fichier - ok 
+		
+		// declaration du fichier de sortie
 		FileOutputStream fos = new FileOutputStream(client.getracine()+var);
-		BufferedOutputStream bos = new BufferedOutputStream(fos);
 		System.out.println("file created");
+		
+		// déclaration des variables de tests
+		byte[] tampon;
+		int value,current;
+
+		
+		// recuperation de la taille de fichier distant
+		if (!isFichier(entreeSocket))throw new Exception("file does not exist");
+
+		//		pour recevoir la taille du fichier pour creer la copie 
+		if ((value=entreeSocket.readInt())<0)throw new Exception("Reception length fail"); 
+		if (value <0) throw new Exception("Not a number exception");
+		System.out.println("longueur du fichier "+value);
+		
+		
+		//création du tampon de lecture
+		tampon = new byte[value];
+		 
+		//ouverture du stream permettant d'ecrire le fichier
+		BufferedOutputStream bos = new BufferedOutputStream(fos);
+
 
 		// Tant que le nombre de bytes lues est positif ou nul
-		bytesRead = entreeSocket.read(tampon,0,tampon.length);
-		System.out.println("bit lues "+bytesRead);
-		current = bytesRead;
-		/*		// Tant que le nombre de bytes lues est positif ou nul
+		value = entreeSocket.read(tampon,0,tampon.length);
+		//System.out.println(tampon.length);
+		System.out.println("bit lues "+value);
+		
+		/*
+		current = 0;
+		// Tant que le nombre de bytes lues est positif ou nul
 		do {
 			bytesRead = entreeSocket.read(tampon, current, (tampon.length-current));
 			if(bytesRead >= 0) current += bytesRead;
 		} while(bytesRead > -1);
-		 */
-		// Lecture des bytes de ce flux de sortie de bytes dans le tableau tableaudebyte ï¿½ 0
+		*/
+		
+		// Lecture des bytes de ce flux de sortie de bytes dans le tampon
 		bos.write(tampon,0,tampon.length);
 		bos.flush();
 		bos.close();
+		fos.close();
 	}
 
 
