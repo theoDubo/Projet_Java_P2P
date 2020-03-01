@@ -149,11 +149,6 @@ public class ServerManager implements Runnable {
 		// Ecriture des bytes dans l'outputstream
 		os.write(readBytes,0,readBytes.length);
 		os.flush();
-		//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
-		// On envoi ça au socket
-		System.out.println("Envoi...");
-		// Ecriture des bytes dans l'outputstream
-		os.flush();
 		return 0;
 	}
  
@@ -201,37 +196,40 @@ public class ServerManager implements Runnable {
 		         readBytes = new byte[4000];
 			        try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			        {
-			        for (int i = 1 ; i <= nbDuBlockFin; i++ ) {
-			            long actuallySkipped = inputStream.skip(4000);
+			        	  long actuallySkipped;
 
-			        	System.out.println("Valeur prise entre"  + valFinBlock + "val skip " + actuallySkipped);
+			        	if ( nbDuBlockDebut == 1) {
+				             actuallySkipped = inputStream.skip(0);
+
+			        	} else {
+				             actuallySkipped = inputStream.skip((nbDuBlockDebut-1)*4000);
+			        	}
+			        for (int i = nbDuBlockDebut ; i <= nbDuBlockFin; i++ ) {
+						System.out.println("val skip " + actuallySkipped);
 			        	//Gère le dernier block
 			            if (i == nbDuBlockFin && (octets/(nbDuBlockFin) < 4000) ) {
 			            	System.out.println("JSuis là ");
 			                readBytes = new byte[octets%4000];
 			                int valStandard = octets%4000;
-				        	System.out.println("Valeur prise entre"  + valStandard);
-
-				            int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
-
+				            int bytesReadCount = inputStream.read(readBytes, 0, 26);
+				        	System.out.println("J'ai pris"  + bytesReadCount +"  "+ valStandard);
 			            } else {
-			            int bytesReadCount = inputStream.read(readBytes, 0, 4000);
+			            	int bytesReadCount = inputStream.read(readBytes, 0, 4000);
 			        	}
+				        os.writeInt(readBytes.length);
+			    		// On envoi ça au socket
+			    		System.out.println("Envoi...");
+			    		// Ecriture des bytes dans l'outputstream
+			    		os.write(readBytes,0,readBytes.length);
+
+						}
+		    		os.flush();
+
+		    	
 			        }
-			        os.writeInt(readBytes.length);
-					// On envoi ça au socket
-					System.out.println("Envoi...");
-					// Ecriture des bytes dans l'outputstream
-					os.write(readBytes,0,readBytes.length);
-					os.flush();
-					//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
-					// On envoi ça au socket
-					System.out.println("Envoi...");
-					// Ecriture des bytes dans l'outputstream
-					os.flush();
-				}
 				}	        
 				return 0;
+				
 	
 	}
 
