@@ -163,7 +163,6 @@ public class ServerManager implements Runnable {
 				int nbDuBlockDebut = Integer.parseInt(debutPlage);
 				int nbDuBlockFin = Integer.parseInt(finPlage);
 				int valFinBlock = nbDuBlockFin * 4000;
-				System.out.println("JSUIS LÀ FDP");
 				String nomF =root+nomFichier;
 				//ouverture du fichier
 				File fich = new File(nomF);
@@ -182,43 +181,58 @@ public class ServerManager implements Runnable {
 
 					 try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 				        {
-						 System.out.println("TEST");
 				            long actuallySkipped = inputStream.skip(0);
-				            int bytesReadCount = inputStream.read(readBytes, 0,octets);
-				     
+				            int bytesReadCount = inputStream.read(readBytes, 0,octets);    
 				        }
+					 os.writeInt(readBytes.length);
+						// On envoi ça au socket
+						System.out.println("Envoi...");
+						// Ecriture des bytes dans l'outputstream
+						os.write(readBytes,0,readBytes.length);
+						os.flush();
+						//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
+						// On envoi ça au socket
+						System.out.println("Envoi...");
+						// Ecriture des bytes dans l'outputstream
+						os.flush();
 				} else {
 					// Si le fichier est supérieur a 4k
-		         readBytes = new byte[(nbDuBlockFin-nbDuBlockDebut)*4000];
+					// Envoie 4ko par 4ko et créé un tableau qui a la taille du dernier segment
+		         readBytes = new byte[4000];
 			        try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			        {
-			        	//On passe tout les blocks jusqu'au debut du block souhaité
-			            long actuallySkipped = inputStream.skip(valFinBlock-(nbDuBlockDebut*4000));
-			            if ( nbDuBlockDebut == 1) {
-			            	nbDuBlockDebut = 0;
-			            }
-			            int valStandard = 4000;
-			            //Signifie que le block demandé est le dernier
-			            int vallll=  valFinBlock-(nbDuBlockDebut*4000);
-			            System.out.println("Valeur Start"+ vallll );
-			       
-			            System.out.println("Valeur "+ valStandard);
-			            //On va lire jusqu'a la fin du fichier
-			            int bytesReadCount = inputStream.read(readBytes, 0, nbDuBlockDebut*4000);
+			        for (int i = 1 ; i <= nbDuBlockFin; i++ ) {
+			            long actuallySkipped = inputStream.skip(4000);
+
+			        	System.out.println("Valeur prise entre"  + valFinBlock + "val skip " + actuallySkipped);
+			        	//Gère le dernier block
+			            if (i == nbDuBlockFin && (octets/(nbDuBlockFin) < 4000) ) {
+			            	System.out.println("JSuis là ");
+			                readBytes = new byte[octets%4000];
+			                int valStandard = octets%4000;
+				        	System.out.println("Valeur prise entre"  + valStandard);
+
+				            int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
+
+			            } else {
+			            int bytesReadCount = inputStream.read(readBytes, 0, 4000);
+			        	}
 			        }
+			        os.writeInt(readBytes.length);
+					// On envoi ça au socket
+					System.out.println("Envoi...");
+					// Ecriture des bytes dans l'outputstream
+					os.write(readBytes,0,readBytes.length);
+					os.flush();
+					//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
+					// On envoi ça au socket
+					System.out.println("Envoi...");
+					// Ecriture des bytes dans l'outputstream
+					os.flush();
 				}
-		        os.writeInt(readBytes.length);
-				// On envoi ça au socket
-				System.out.println("Envoi...");
-				// Ecriture des bytes dans l'outputstream
-				os.write(readBytes,0,readBytes.length);
-				os.flush();
-				//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
-				// On envoi ça au socket
-				System.out.println("Envoi...");
-				// Ecriture des bytes dans l'outputstream
-				os.flush();
+				}	        
 				return 0;
+	
 	}
 
 	@Override
