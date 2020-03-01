@@ -1,23 +1,30 @@
 package fonctionnement;
+
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Scanner;
 import communication.Serveur_FTP;
 
-public class ServerManager implements Runnable {
+public class os implements Runnable{
 	Socket socket;
 	Serveur_FTP serveur;
 	String root="./dossierServeur/";
 
-	public ServerManager(Socket socket, Serveur_FTP serveur) {
+	public os(Socket socket, Serveur_FTP serveur) {
 		super();
 		this.socket = socket;
 		this.serveur = serveur;
@@ -56,10 +63,6 @@ public class ServerManager implements Runnable {
 					}
 					break;
 					// les autres fonctions d'utilisations Ã©ventuels
-				case "size":
-					if (var.length>2) throw new Exception("invalid parameter number");
-					SizeIs(var[1],sss);
-					break;
 				}
 			}
 		}while (!chaine.equals("FIN"));
@@ -201,35 +204,22 @@ public class ServerManager implements Runnable {
 						System.out.println("JSuis là ");
 						readBytes = new byte[octets%4000];
 						int valStandard = octets%4000;
-						int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
+						int bytesReadCount = inputStream.read(readBytes, 0, 26);
 						System.out.println("J'ai pris"  + bytesReadCount +"  "+ valStandard);
 					} else {
 						int bytesReadCount = inputStream.read(readBytes, 0, 4000);
 					}
+					os.writeInt(readBytes.length);
+					// On envoi ça au socket
+					System.out.println("Envoi...");
+					// Ecriture des bytes dans l'outputstream
+					os.write(readBytes,0,readBytes.length);
 
 				}
-				os.writeInt(readBytes.length);
-				// On envoi ça au socket
-				System.out.println("Envoi...");
-				// Ecriture des bytes dans l'outputstream
-				os.write(readBytes,0,readBytes.length);
-
 			}
-			os.flush();
-
 		}	
-		return 0;
-	}
-
-
-	public void SizeIs(String nomFichier, Socket sss)throws IOException {
-		String nomF=root+nomFichier;
-		File fich =new File(nomF);
-		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
-		os.writeInt((int)fich.length());
 		os.flush();
+		return 0;
 	}
 
 	@Override
@@ -247,3 +237,4 @@ public class ServerManager implements Runnable {
 
 
 }
+

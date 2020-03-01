@@ -2,15 +2,17 @@ package communication;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
+
 import fonctionnement.ServerManager;
 
 public class Serveur_FTP implements Serveur {
 	private ServerSocket socket ;
 	
-	public void  ecoute() throws Exception{ // fonction d'écoute du serveur 
+	public void  ecoute(int val) throws Exception{ // fonction d'écoute du serveur 
 		// Création d'un socket server sur le port 40000
 		Socket sss;
-		socket = new ServerSocket(40000);		
+		socket = new ServerSocket(val);		
 		while(true) {
 			System.out.println("En attente ...");
 			sss = socket.accept(); 
@@ -35,7 +37,8 @@ public class Serveur_FTP implements Serveur {
 	public static void main(String[] args) {
 		Serveur_FTP sr = new Serveur_FTP();
 		try {
-			sr.ecoute();
+			Scanner scan= new Scanner(System.in);
+			sr.ecoute(Integer.parseInt(scan.nextLine()));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}			
