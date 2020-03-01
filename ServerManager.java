@@ -205,21 +205,23 @@ public class ServerManager implements Runnable {
 			            	System.out.println("JSuis là ");
 			                readBytes = new byte[octets%4000];
 			                int valStandard = octets%4000;
-				            int bytesReadCount = inputStream.read(readBytes, 0, 26);
+				            int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
 				        	System.out.println("J'ai pris"  + bytesReadCount +"  "+ valStandard);
 			            } else {
 			            	int bytesReadCount = inputStream.read(readBytes, 0, 4000);
 			        	}
-				        os.writeInt(readBytes.length);
-			    		// On envoi ça au socket
-			    		System.out.println("Envoi...");
-			    		// Ecriture des bytes dans l'outputstream
-			    		os.write(readBytes,0,readBytes.length);
-
+	
 						}
+			        os.writeInt(readBytes.length);
+		    		// On envoi ça au socket
+		    		System.out.println("Envoi...");
+		    		// Ecriture des bytes dans l'outputstream
+		    		os.write(readBytes,0,readBytes.length);
+
 			        }
+		    		os.flush();
+
 				}	
-	    		os.flush();
 				return 0;
 	}
 
