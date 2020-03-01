@@ -184,12 +184,6 @@ public class ServerManager implements Runnable {
 						System.out.println("Envoi...");
 						// Ecriture des bytes dans l'outputstream
 						os.write(readBytes,0,readBytes.length);
-						os.flush();
-						//ystem.out.println("Valeur du fichier" + Arrays.toString(readBytes)  + " est " + octets + " le nb est " + var );;
-						// On envoi ça au socket
-						System.out.println("Envoi...");
-						// Ecriture des bytes dans l'outputstream
-						os.flush();
 				} else {
 					// Si le fichier est supérieur a 4k
 					// Envoie 4ko par 4ko et créé un tableau qui a la taille du dernier segment
@@ -223,14 +217,10 @@ public class ServerManager implements Runnable {
 			    		os.write(readBytes,0,readBytes.length);
 
 						}
-		    		os.flush();
-
-		    	
 			        }
-				}	        
+				}	
+	    		os.flush();
 				return 0;
-				
-	
 	}
 
 	@Override
