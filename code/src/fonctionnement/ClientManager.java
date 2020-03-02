@@ -13,7 +13,7 @@ import communication.Client_TCP;
 
 public class ClientManager{
 	private Client_TCP client;
-	private String racine;
+	private String racine="./dossierClient/";
 	
 	public ClientManager(Client_TCP client) {
 		super();

@@ -60,6 +60,10 @@ public class ServerManager implements Runnable {
 					if (var.length>2) throw new Exception("invalid parameter number");
 					SizeIs(var[1],sss);
 					break;
+				case "isFichier" :
+					if (var.length>2) throw new Exception("invalid parameter number");
+					isFichier(var[1],sss);
+					break;
 				}
 			}
 		}while (!chaine.equals("FIN"));
@@ -72,9 +76,6 @@ public class ServerManager implements Runnable {
 		//ouverture du fichier
 		File fich = new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-		//test d'existence du fichier
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
 		// declaration du chemin du fichier et du tableau de données du fichier
 		Path fileLocation = Paths.get(nomF);
 		byte[] data = Files.readAllBytes(fileLocation);
@@ -97,13 +98,11 @@ public class ServerManager implements Runnable {
 		File fich = new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 		//test d'existence du fichier
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
+	
 		// declaration du chemin du fichier et du tableau de données du fichier
 		//	Path fileLocation = Paths.get(nomF);
 		int octets = (int) fich.length();
 		byte[] readBytes;
-		System.out.println(octets);
 		Path fileLocation = Paths.get(nomF);
 		//Si le fichier est inférieur à 4ko
 		if (octets < 4000) {
@@ -125,21 +124,18 @@ public class ServerManager implements Runnable {
 				long actuallySkipped = inputStream.skip(valFinBlock-4000);
 				int valStandard = 4000;
 				//Signifie que le block demandé est le dernier
-				System.out.println("Valeur "+ octets);
-				int val12 = (octets/(nbDuBlock-1));
-				System.out.println("Valeur2 "+ val12);
+
 
 				if ((octets > ((nbDuBlock-1) * 4000)) && ((octets/(nbDuBlock) < 4000))) {
 					readBytes = new byte[octets%4000];
 					valStandard = octets%4000;
 				}
-				System.out.println("Valeur "+ valStandard);
+
 				//On va lire jusqu'a la fin du fichier
 				int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
 
 			}
 		}
-		os.writeInt(readBytes.length);
 		// On envoi ça au socket
 		System.out.println("Envoi...");
 		// Ecriture des bytes dans l'outputstream
@@ -158,9 +154,6 @@ public class ServerManager implements Runnable {
 		//ouverture du fichier
 		File fich = new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-		//test d'existence du fichier
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
 		// declaration du chemin du fichier et du tableau de données du fichier
 		//	Path fileLocation = Paths.get(nomF);
 		int octets = (int) fich.length();
@@ -175,7 +168,6 @@ public class ServerManager implements Runnable {
 				long actuallySkipped = inputStream.skip(0);
 				int bytesReadCount = inputStream.read(readBytes, 0,octets);    
 			}
-			os.writeInt(readBytes.length);
 			// On envoi ça au socket
 			System.out.println("Envoi...");
 			// Ecriture des bytes dans l'outputstream
@@ -208,7 +200,6 @@ public class ServerManager implements Runnable {
 					}
 
 				}
-				os.writeInt(readBytes.length);
 				// On envoi ça au socket
 				System.out.println("Envoi...");
 				// Ecriture des bytes dans l'outputstream
@@ -221,13 +212,18 @@ public class ServerManager implements Runnable {
 		return 0;
 	}
 
-
+	public void isFichier(String nomF, Socket sss) throws IOException{
+		String nomFichier=root+nomF;
+		File fich =new File(nomFichier);
+		DataOutputStream os = new DataOutputStream(sss.getOutputStream());
+		if (!fich.exists())	os.writeInt(0);
+		else os.writeInt(1);
+	}
+	
 	public void SizeIs(String nomFichier, Socket sss)throws IOException {
 		String nomF=root+nomFichier;
 		File fich =new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
 		os.writeInt((int)fich.length());
 		os.flush();
 	}
