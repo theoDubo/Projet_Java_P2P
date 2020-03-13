@@ -14,7 +14,7 @@ import java.util.TreeMap;
 
 import fonctionnement.ClientManager;
 
-public class Client_TCP implements Client {
+public class Client_TCP implements Client,Runnable {
 	private List<Socket> socket=new ArrayList<Socket>();
 	private static int nb_conn=0;
 
@@ -29,7 +29,6 @@ public class Client_TCP implements Client {
 
 	public int connect(int i) throws UnknownHostException, IOException {
 		socket.add(new Socket("localhost",i));
-		System.out.println("Connexion...");
 		System.out.println("connexion validé "+(nb_conn+1));
 		return nb_conn++;
 	}
@@ -51,14 +50,14 @@ public class Client_TCP implements Client {
 
 		// Creation d'une map classee
 		SortedMap<Integer, byte[]> filePackets = new TreeMap<Integer, byte[]>();	
-		
+
 		//creation de la variable du suivi de lecture
 		int compte; 
 		for(int i=packetSelected1;i<=packetSelected2;i++) {
 			// On parcours la plage de paquets
 			byte [] buffer = new byte[4000];
 			if((compte=dis.read(buffer,0,4000))<0)throw new Exception("bytes not read");
-			
+
 			//byte effectivement lues
 			byte [] result = new byte[compte];
 			if (compte != 4000)for(int j=0;j<compte;j++)result[j]=buffer[j];
@@ -98,7 +97,7 @@ public class Client_TCP implements Client {
 			//Si il y 'a plus de donnees on peut separer l'information sur les differents serveurs
 		}	else mapping = getFichier(var[1],taille); //getFichier sépare la data à récupéré sur les différents sockets reliés au client 
 
-		
+
 		//on écrit les données récoltés dans un fichier
 		if( clientm.ecrireFichier(var[1],mapping)<-1) throw new Exception("Ecrire Fichier failed");		
 	}
@@ -116,12 +115,12 @@ public class Client_TCP implements Client {
 		SortedMap<Integer, byte[]> filePacket = new TreeMap<Integer, byte[]>();	
 		byte [] buffer = new byte[4000];
 		if((compte=dis.read(buffer,0,4000))<0) throw new Exception("bytes not read");
-		
+
 		//recopie de la valeur de buffer afin de stocker que ce qui est effectivement lu
 		byte [] result= new byte[compte];
 		if (compte!= 4000) for (int i = 0; i < compte;i++) result[i]=buffer[i];
 		else result=buffer;
-		
+
 		//ajout dans la sortedmap
 		filePacket.put(packetSelected,result);
 		return filePacket;
@@ -193,19 +192,23 @@ public class Client_TCP implements Client {
 
 	}
 
-	public static void main(String[] args) {
-		Client_TCP client = new Client_TCP();
-		ClientManager clientm = new ClientManager(client);
+	public void run() {
+		ClientManager clientm = new ClientManager(this);
 		// pour stocker les numéros des sockets dans la liste
 		try {
-			for(int i = 40000; i <40003 ; i ++) {
-				client.connect(i);
+			System.out.println("Quel port pour le serveur distant ? (FIN pour arrêter l'ajout de serveur)");
+			Scanner sc= new Scanner(System.in);
+			String s;
+			while(!(s=sc.nextLine()).contentEquals("FIN")) {
+				this.connect(Integer.parseInt(s));
+				System.out.println("Quel port pour le serveur ? (FIN pour arrêter l'ajout de serveur)");
 			}
-			client.menu(clientm);
+			this.menu(clientm);
+			sc.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+				}
 
 	}
 
