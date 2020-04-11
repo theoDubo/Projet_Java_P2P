@@ -23,6 +23,17 @@ public class ServerManager implements Runnable {
 		this.serveur = serveur;
 	}
 
+	public ServerManager(Socket socket,String chemin, Serveur_FTP serveur) throws Exception {
+		super();
+		this.socket = socket;
+		this.serveur = serveur;
+		File file=new File(chemin);
+		if(!file.isDirectory())throw new Exception("Not a path Exception");
+		else this.root = chemin;
+	}
+
+
+
 
 	private void menu(Socket sss)throws Exception { //manque l'ajout de fonction mais sinon Ã§a marche
 		// TODO Auto-generated method stub		
@@ -34,6 +45,7 @@ public class ServerManager implements Runnable {
 		String[] var;
 		do {
 			while ((chaine = entreeSocket.readLine())==null);
+			System.out.println("message recu : "+chaine);
 			//verification que la chaine ai au moins 2 parametres
 			if (!chaine.equals("FIN")) {
 				if (chaine.indexOf(" ")<0)throw new Exception("invalid parameter number");
@@ -60,10 +72,6 @@ public class ServerManager implements Runnable {
 					if (var.length>2) throw new Exception("invalid parameter number");
 					SizeIs(var[1],sss);
 					break;
-				case "isFichier" :
-					if (var.length>2) throw new Exception("invalid parameter number");
-					isFichier(var[1],sss);
-					break;
 				}
 			}
 		}while (!chaine.equals("FIN"));
@@ -74,11 +82,9 @@ public class ServerManager implements Runnable {
 	public int get(String nomFichier,Socket sss) throws IOException { // fonction de rÃ©cupÃ©ration d'un fichier
 		String nomF =root+nomFichier;
 		//ouverture du fichier
-		File fich = new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 		// declaration du chemin du fichier et du tableau de données du fichier
-		Path fileLocation = Paths.get(nomF);
-		byte[] data = Files.readAllBytes(fileLocation);
+		byte[] data = Files.readAllBytes(Paths.get(nomF));
 		os.writeInt(data.length);
 		// On envoi ça au socket
 		System.out.println("Envoi...");
@@ -98,7 +104,7 @@ public class ServerManager implements Runnable {
 		File fich = new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 		//test d'existence du fichier
-	
+
 		// declaration du chemin du fichier et du tableau de données du fichier
 		//	Path fileLocation = Paths.get(nomF);
 		int octets = (int) fich.length();
@@ -110,9 +116,8 @@ public class ServerManager implements Runnable {
 
 			try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			{
-				System.out.println("TEST");
-				long actuallySkipped = inputStream.skip(0);
-				int bytesReadCount = inputStream.read(readBytes, 0,octets);
+				inputStream.skip(0);
+				inputStream.read(readBytes, 0,octets);
 
 			}
 		} else {
@@ -121,7 +126,7 @@ public class ServerManager implements Runnable {
 			try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			{
 				//On passe tout les blocks jusqu'au debut du block souhaité
-				long actuallySkipped = inputStream.skip(valFinBlock-4000);
+				inputStream.skip(valFinBlock-4000);
 				int valStandard = 4000;
 				//Signifie que le block demandé est le dernier
 
@@ -132,7 +137,7 @@ public class ServerManager implements Runnable {
 				}
 
 				//On va lire jusqu'a la fin du fichier
-				int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
+				inputStream.read(readBytes, 0, valStandard);
 
 			}
 		}
@@ -149,7 +154,6 @@ public class ServerManager implements Runnable {
 		//Je dois uniquement envoyer la valeur demander par exemple le contenu de la 5éme case du tableau
 		int nbDuBlockDebut = Integer.parseInt(debutPlage);
 		int nbDuBlockFin = Integer.parseInt(finPlage);
-		int valFinBlock = nbDuBlockFin * 4000;
 		String nomF =root+nomFichier;
 		//ouverture du fichier
 		File fich = new File(nomF);
@@ -165,8 +169,8 @@ public class ServerManager implements Runnable {
 
 			try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			{
-				long actuallySkipped = inputStream.skip(0);
-				int bytesReadCount = inputStream.read(readBytes, 0,octets);    
+				inputStream.skip(0);
+				inputStream.read(readBytes, 0,octets);    
 			}
 			// On envoi ça au socket
 			System.out.println("Envoi...");
@@ -178,25 +182,22 @@ public class ServerManager implements Runnable {
 			readBytes = new byte[4000];
 			try (InputStream inputStream = new FileInputStream(fileLocation.toFile()))
 			{
-				long actuallySkipped;
 
 				if ( nbDuBlockDebut == 1) {
-					actuallySkipped = inputStream.skip(0);
+					inputStream.skip(0);
 
 				} else {
-					actuallySkipped = inputStream.skip((nbDuBlockDebut-1)*4000);
+					inputStream.skip((nbDuBlockDebut-1)*4000);
 				}
 				for (int i = nbDuBlockDebut ; i <= nbDuBlockFin; i++ ) {
-					System.out.println("val skip " + actuallySkipped);
 					//Gère le dernier block
 					if (i == nbDuBlockFin && (octets/(nbDuBlockFin) < 4000) ) {
-						System.out.println("JSuis là ");
 						readBytes = new byte[octets%4000];
 						int valStandard = octets%4000;
 						int bytesReadCount = inputStream.read(readBytes, 0, valStandard);
 						System.out.println("J'ai pris"  + bytesReadCount +"  "+ valStandard);
 					} else {
-						int bytesReadCount = inputStream.read(readBytes, 0, 4000);
+						inputStream.read(readBytes, 0, 4000);
 					}
 
 				}
@@ -206,26 +207,19 @@ public class ServerManager implements Runnable {
 				os.write(readBytes,0,readBytes.length);
 
 			}
-			os.flush();
+
 
 		}	
 		return 0;
 	}
 
-	public void isFichier(String nomF, Socket sss) throws IOException{
-		String nomFichier=root+nomF;
-		File fich =new File(nomFichier);
-		DataOutputStream os = new DataOutputStream(sss.getOutputStream());
-		if (!fich.exists())	os.writeInt(0);
-		else os.writeInt(1);
-	}
-	
+
+
 	public void SizeIs(String nomFichier, Socket sss)throws IOException {
 		String nomF=root+nomFichier;
 		File fich =new File(nomF);
 		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
 		os.writeInt((int)fich.length());
-		os.flush();
 	}
 
 	@Override
@@ -239,7 +233,4 @@ public class ServerManager implements Runnable {
 			this.run();
 		}
 	}
-
-
-
 }

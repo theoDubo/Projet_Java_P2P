@@ -1,24 +1,67 @@
 package communication;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.SortedMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 
 import fonctionnement.ClientManager;
 
-public class Client_TCP implements Client {
+public class Client_TCP implements Client,Runnable {
 	private List<Socket> socket=new ArrayList<Socket>();
 	private static int nb_conn=0;
+	private int sockServer;
+	private Socket proxy;
+	private String root=null;
+	Timer timer;
+	private Scanner scanner;
 
+	TimerTask timTas=new TimerTask() {
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			try {
+			PrintStream os=new PrintStream(proxy.getOutputStream());
+			DataInputStream is=new DataInputStream(proxy.getInputStream());
+			
+			os.println("maj");
+			int i;
+			boolean isContained=false;
+			while((i=is.readInt())!=-1) {
+				for(Socket s : socket) if (s.getPort()==i)isContained=true;
+				if (!isContained)connect(i);
+			}
+			}catch (Exception e) {
+				// TODO: handle exception
+				e.printStackTrace();
+			}
+		}
+	};
+	public Client_TCP(String r,int s, Scanner sc) {
+		this.root=r;
+		this.sockServer=s;
+		timer = new Timer();
+		this.scanner = sc;
 
+	}
+	public Client_TCP(int s) {
+		this.sockServer=s;
+	}
+	
+	
 	public boolean isFichier(String fichier,DataInputStream es,PrintStream os)throws Exception { 	//méthode qui reçoit le retour pour l'existence du fichier passer en paramètre du get
 		int value;
 		os.println("isFichier "+fichier);
@@ -29,7 +72,6 @@ public class Client_TCP implements Client {
 
 	public int connect(int i) throws UnknownHostException, IOException {
 		socket.add(new Socket("localhost",i));
-		System.out.println("Connexion...");
 		System.out.println("connexion validé "+(nb_conn+1));
 		return nb_conn++;
 	}
@@ -45,20 +87,22 @@ public class Client_TCP implements Client {
 		// Stream de lecture et d'écriture de donnees
 		DataInputStream	dis = new DataInputStream(sock.getInputStream());
 		PrintStream sortieSocket= new PrintStream(sock.getOutputStream());
+		PrintStream proxySocketOut=new PrintStream(proxy.getOutputStream());
 
-		//envoi de la requête au serveur
+		//envoi de la requete au serveur
 		sortieSocket.println("get "+fileName+" "+packetSelected1+" "+packetSelected2);
-
+		proxySocketOut.println("get "+fileName+" "+packetSelected1+" "+packetSelected2);
+		
 		// Creation d'une map classee
 		SortedMap<Integer, byte[]> filePackets = new TreeMap<Integer, byte[]>();	
-		
+
 		//creation de la variable du suivi de lecture
 		int compte; 
 		for(int i=packetSelected1;i<=packetSelected2;i++) {
 			// On parcours la plage de paquets
 			byte [] buffer = new byte[4000];
 			if((compte=dis.read(buffer,0,4000))<0)throw new Exception("bytes not read");
-			
+
 			//byte effectivement lues
 			byte [] result = new byte[compte];
 			if (compte != 4000)for(int j=0;j<compte;j++)result[j]=buffer[j];
@@ -72,93 +116,184 @@ public class Client_TCP implements Client {
 	//méthode principal de récupération du fichier, il appelle les autres méthodes get par l'intermédiaire de getFichier
 	public void get(String[]var,ClientManager clientm) throws Exception{
 		// Creation d'un socket sur un port choisi par le systeme
-		PrintStream sortieSocket= new PrintStream(this.getSocket(0).getOutputStream());
-		DataInputStream	entreeSocket = new DataInputStream(this.getSocket(0).getInputStream());
+		PrintStream sortieSocket= new PrintStream(this.proxy.getOutputStream());
+		DataInputStream	entreeSocket = new DataInputStream(this.proxy.getInputStream());
 		SortedMap<Integer,byte[]> mapping = new TreeMap<Integer,byte[]>();
 		byte[] tampon;
 		int taille,val;
-
+		
+		//verification le fichier existe en memoire du proxy
 		if (!isFichier(var[1],entreeSocket,sortieSocket))throw new Exception("file does not exist");
 
+		//recuperation des donnees de stockage concernant le fichier depuis les differents serveurs
+		sortieSocket.println("search "+var[1]);
+		Map<Integer,ArrayList<Integer>> which= new HashMap<Integer,ArrayList<Integer>>();
+		
+		while((taille=entreeSocket.readInt())!= -1){
+				if (taille==-2) {
+					sortieSocket.close();
+					throw new Exception("Upload ratio unreached");
+				}
+				which.put(taille, readArrayList(entreeSocket));
+		}
+		//Creation recuperation du lien vers le premier serveur possedant le fichier
+		//recuperation des clees de la map 
+		
+		Set<Integer> keys=which.keySet();
+		ArrayList<Integer> keysA=new ArrayList<Integer>(keys);
+		
+		Socket i = resolveSocket(keysA.get(0));
+		
+		//creation des liens avec le premier serveur
+		PrintStream sortieSock= new PrintStream(i.getOutputStream());
+		DataInputStream	entreeSock = new DataInputStream(i.getInputStream());
+		
 		//on recupere la taille du fichier
-		sortieSocket.println("size "+var[1]);
-		taille=entreeSocket.readInt();
-
+		sortieSock.println("size "+var[1]);
+		taille=entreeSock.readInt();
+		System.out.println("taille : "+taille);
 		//on divise sa taille pour voir combien de block de 4ko on peut faire
 		val=taille/4000; 
 
 		//on cree le tampon de la taille du fichier
 		tampon = new byte[taille];
 
-		if (val<1) { // si il n'y a que 1 block max de 4ko de donnees
-			sortieSocket.println("get "+var[1]);
-			entreeSocket.read(tampon);
+		if (val<=1) { // si il n'y a que 1 block max de 4ko de donnees
+			sortieSock.println("get "+var[1]);
+			sortieSocket.println("get "+var[1]+" 1");
+			entreeSock.read(tampon);
 			mapping.put(0, tampon);
 
 			//Si il y 'a plus de donnees on peut separer l'information sur les differents serveurs
-		}	else mapping = getFichier(var[1],taille); //getFichier sépare la data à récupéré sur les différents sockets reliés au client 
+		}	else mapping = getFichier(var[1],taille,which); //getFichier sépare la data à récupéré sur les différents sockets reliés au client 
 
-		
+
 		//on écrit les données récoltés dans un fichier
 		if( clientm.ecrireFichier(var[1],mapping)<-1) throw new Exception("Ecrire Fichier failed");		
 	}
 
+	private ArrayList<Integer> readArrayList(DataInputStream entreeSocket) throws IOException {
+		String check=entreeSocket.readUTF();
+		String[] val=check.split(" ");
+		ArrayList<Integer> var= new ArrayList<Integer>();
+		for (String bob : val) {
+			var.add(Integer.parseInt(bob));
+		}
+		return var;
+	}
 	// Getter permettant de retourner une map deja classee qui contient le paquet et son tableau de byte asso	public SortedMap<Integer, byte[]> get(String fileName,Socket sock,int packetSelected) throws FileNotFoundException, IOException, Exception { 
 	private SortedMap<Integer,byte[]> get(String fileName,Socket sock,int packetSelected) throws Exception{
 		// Stream de lecture de donnees
 		DataInputStream	dis = new DataInputStream(sock.getInputStream());
 		PrintStream sortieSocket= new PrintStream(sock.getOutputStream());
+		PrintStream prox = new PrintStream(proxy.getOutputStream());
+		
 		int compte;
 		//envoi de la requête au serveur
 		sortieSocket.println("get "+fileName+" "+packetSelected);
-
+		prox.println("get "+fileName+" "+packetSelected);
 		// On cree une autre map que l'on va retourner et elle contient le numero de paquet voulu et son tableau de byte
 		SortedMap<Integer, byte[]> filePacket = new TreeMap<Integer, byte[]>();	
 		byte [] buffer = new byte[4000];
 		if((compte=dis.read(buffer,0,4000))<0) throw new Exception("bytes not read");
-		
+
 		//recopie de la valeur de buffer afin de stocker que ce qui est effectivement lu
 		byte [] result= new byte[compte];
 		if (compte!= 4000) for (int i = 0; i < compte;i++) result[i]=buffer[i];
 		else result=buffer;
-		
+
 		//ajout dans la sortedmap
 		filePacket.put(packetSelected,result);
 		return filePacket;
 	}
 
-	private SortedMap<Integer,byte[]> getFichier(String string, int taille) throws FileNotFoundException, IOException, Exception {
+	private SortedMap<Integer,byte[]> getFichier(String string, int taille,Map<Integer,ArrayList<Integer>>wich) throws FileNotFoundException, IOException, Exception {
 		// TODO Auto-generated method stub
-		// permet de remplir la map mapping avec les blocs issus de plusieurs serveurs -> gestion des arrêts de serveur avec un try catch
+		// permet de remplir la map mapping avec les blocs issus de plusieurs serveurs -> gestion des arrets de serveur avec un try catch
 
-		//définition d'une SortedMap de résultat et d'une de remplissage
+		//definition d'une SortedMap de résultat et d'une de remplissage
 		SortedMap<Integer,byte[]> result = new TreeMap<Integer,byte[]>();
 
-		// définition du nombre de paquet que doit recevoir chaque serveur
-		int packServer = taille / (socket.size()*4000);
-
-		//définition du reste traité par le dernier serveur
-		int reste = taille - socket.size()*4000 * packServer;
-
-		//boucle gérant la répartition entre les serveur
-		for (int i=0;i<socket.size();i++) {
-			//récupération des paquets réglementaire
-			if (packServer==1) {
-				result.putAll(get(string,socket.get(i),i*packServer+1));
-			} else {
-				System.out.println("Demande des paquets de "+i*packServer+" à "+(i+1)*packServer);
-				result.putAll(get(string,socket.get(i),i*packServer,(i+1)*packServer));
+		//definition du nombre de paquet pour avoir le fichier entier
+		int nbPack= taille/4000;
+		int r= taille%4000;
+		
+		//differenciation entre le cas exact et le cas approximatif
+		if (r>0) {
+			for (int i = 1; i < nbPack+1; i++) {
+				result.putAll(askPacket(wich,string,i));
 			}
-			//récupération des paquets restants
-			if (reste !=0 && i==socket.size()-1) result.putAll(get(string,socket.get(i),(i+1)*packServer+1));
+		} else {
+			for (int i = 1; i < nbPack;i++) {
+				result.putAll(askPacket(wich,string,i));
+			}
 		}
 		return result;
 
 	}
+	
+	private SortedMap<Integer, byte[]> askPacket(Map<Integer,ArrayList<Integer>>wich,String string, int k) throws Exception {
+		//creation de la liste des cles
+		Set<Integer> keyreference = wich.keySet();
+		ArrayList<Integer> keys = new ArrayList<Integer>(keyreference);
+		
+		//declaration des variables de traitement
+		int i,compteur=0;
+		Random rand = new Random();
+		
+		//boucle random de selection de serveur en fonction du paquet souhaite
+		while(true) {
+			//recuperation d'un port aleatoire (ça ne marche pas correctement 
+			i=keys.get(rand.nextInt(keys.size()));
+			//si le serveur associe detient le paquet souhaitee
+			if (wich.get(i).contains(k))return get(string,resolveSocket(i),k);
+			if(++compteur > (keys.size()+2)*100) {
+				System.out.println("retour par non selection de bon serveur");
+				return null;
+			}
+		}
+	}
+	
+	
+	
+//-------------------------------------------------------------------------------------------------miseAJour
+//*** Methode qui permet de recuperer la liste des serveurs connectes au proxy
+//*** C est la meme methode que dans le timer Task
 
+	public void miseAJour() throws IOException {
+		DataInputStream is=new DataInputStream(proxy.getInputStream());
+		int i;
+		//boolean permettant de verifier si le port est deja dans l application
+		boolean isContained;
+		while((i=is.readInt())!=-1) {
+			isContained=false;
+			//si i est a l'interieur de la liste on change le boolean
+			for(Socket s : socket) if (s.getPort()==i)isContained=true;
+			if (!isContained)connect(i);
+		}
+	}
+	
+	
+//-------------------------------------------------------------------------------------------------resolveSocket
+//*** Methode permettant de determiner le socket associe a un port si celui-ci est
+//*** present dans la liste des connexions
+	
+	private Socket resolveSocket(int i) {
+		int k =0;
+		// Si on a pas depasser la fin de la liste de connexion et
+		//  que le port ne correspond pas au socket on continue
+		while((socket.get(k++).getPort()!=i)&& (k+1)!=socket.size());
+		if (k>socket.size()-1) {// si on a atteint la fin
+			System.out.println("not found");
+			return null;
+		}
+		return socket.get(k-1); // sinon on retourne le socket trouve
+	}
+
+	
+//--------------------------------------------------------------------------------------------------MENU
+//*** Methode principal de la classe, elle permet d'executer les demandes du client
 	public void menu(ClientManager client) throws Exception {
-		// Scanner sur System.in
-		Scanner scanner = new Scanner(System.in);
 		String chaine = "";
 		String[] var;
 
@@ -166,49 +301,76 @@ public class Client_TCP implements Client {
 		chaine = scanner.nextLine();
 
 		while (!chaine.equals("FIN")) {
-			//vÃ©rification que la chaine ai au moins 2 paramÃ¨tres
+			//verification que la chaine ai au moins 2 paramÃ¨tres
 			if (chaine.indexOf(" ")<0)throw new Exception("invalid parameter number");
-			//			sortieSocket.println(chaine);//envoi d'une chaine de caractÃ¨re
 			var=chaine.split(" ");
 
 			switch(var[0]) {
 			case "get":
-				System.out.println("En attente ...");
-				get(var,client);
+				if (var.length!=2)throw new Exception("invalid parameter number");
+				else {
+					System.out.println("En attente ...");
+					get(var,client);
+				}
+				
 				break;
 			case "Racine" : 
+				if (var.length!=2)throw new Exception("invalid Parameter number");
 				try {
 					client.setRacine(var[1]);
 				} catch(Exception e) {
+					scanner.close();
 					e.printStackTrace();
-
+				}
+				break;
+			case "ls":
+				try {
+					ls();
+				catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
-			System.out.println("Tapez vos commandes ou FIN pour arrÃªter :");
+			System.out.println("Tapez vos commandes ou FIN pour arreter :");
 			chaine = scanner.nextLine();
 		}
 		System.out.println("deconnexion.");
 		//à réfléchir
 		scanner.close();
-
 	}
 
-	public static void main(String[] args) {
-		Client_TCP client = new Client_TCP();
-		ClientManager clientm = new ClientManager(client);
+	
+	
+//----------------------------------------------------------------------------------------------RUN
+//***methode d execution de la classe
+	public void run() {
+		ClientManager clientm;
+		Scanner sc=new Scanner(System.in);
+		// si l'utilisateur n a pas demande a utiliser un dossier on garde le chemin par defaut
+		if (this.root==null)clientm=new ClientManager(this);
+		
+		// si non on modifie le chemin dans le manager
+		else clientm=new ClientManager(this,root);
 		// pour stocker les numéros des sockets dans la liste
 		try {
-			for(int i = 40000; i <40003 ; i ++) {
-				client.connect(i);
-			}
-			client.menu(clientm);
+			//premiere etape se connecter au proxy
+			if((proxy=new Socket("localhost",12345))==null)throw new Exception("Proxy unreachable");
+		
+			//deuxieme etape envoyer au proxy le port du serveur associe a cet user
+			new DataOutputStream(proxy.getOutputStream()).writeInt(sockServer);
+			clientm.isAllFiles(proxy);
+			
+			miseAJour();
+			// On ouvre le menu 
+			timer.schedule(timTas, 60000,60000);
+			this.menu(clientm);
+			
+			sc.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 	}
-
 	public void deconnect(int nb) throws IOException {
 		socket.get(nb).close();
 	}
