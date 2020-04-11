@@ -18,6 +18,8 @@ public class Serveur_ProxyCom{
 	// Map ayant le port du socket server en cle et un objet en tant que valeur
 	public Map<Integer,PortsManagement> tracker = new HashMap<Integer,PortsManagement>();
 	
+	//------------------------------------------------------------------------------------------------addPort
+	//*** Methode permettant l'ajout du port a la liste des connexions
 	public ArrayList<Integer> addPort(int port) {
 		this.portsArray.add(port);
 		this.tracker.put(port, new PortsManagement());
@@ -40,6 +42,10 @@ public class Serveur_ProxyCom{
 		}
 	}
 	
+	
+	//-------------------------------------------------------------------------------------------------Ecoute
+	//*** Methode principal de la classe, elle gere le proxy et cree les threads
+	//*** associes au differentes connexions
 	public void ecoute()throws Exception {
 		// on cree le socket server du manager
 		socket=new ServerSocket(12345);
@@ -66,6 +72,8 @@ public class Serveur_ProxyCom{
 		}
 	}
 	
+//-------------------------------------------------------------------------------------------------------------------ServerArray
+//*** Methode permettant de renvoyer la liste des serveurs connectes au proxy
 	public void ServerArray(DataOutputStream s) throws IOException {
 		// TODO Auto-generated method stub
 		if (portsArray.size()==1) {
@@ -79,15 +87,16 @@ public class Serveur_ProxyCom{
 		}
 	}
 
-
-	public ServerSocket getSocket() {
-		return socket;
-	}
-	
+//--------------------------------------------------------------------------------------------------------------------Deconnexion
+//*** Methode permettant de gerer la deconnexion d'un des serveurs
 	public void deconnexion(int i) {
 		this.portsArray.remove(this.portsArray.indexOf(i));
+		this.registry.remove(i);
+		this.tracker.remove(i);
 	}
 
+//----------------------------------------------------------------------------------------------------------------------MAIN
+//*** Methode d'execution de la classe
 	public static void main(String[] arg0) {
 		try {
 			Serveur_ProxyCom serveur = new Serveur_ProxyCom();

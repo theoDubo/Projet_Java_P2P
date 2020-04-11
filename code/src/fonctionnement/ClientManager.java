@@ -4,8 +4,6 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.net.Socket;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Scanner;
@@ -67,36 +65,6 @@ public class ClientManager{
 	}
 
 
-	//Renvoie un fichier et son nombre de block
-	public void isAllFiles(Socket sss) throws IOException{
-		PrintStream os = new PrintStream(sss.getOutputStream());
-		final File folder = new File(racine);
-		//définition d'une SortedMap de résultat et d'une de remplissage
-		String nomBlock;
-		for(final File file : folder.listFiles()){
-			nomBlock = "fichierDispo "+ file.getName() + " " + blockFile(file);
-			// On envoi ça au socket
-			// Ecriture des bytes dans l'outputstream
-			os.println(nomBlock);
-			System.out.println("Envoi...");
-		}
-	}
-
-	//Return le nombre de block du fichier
-	public int blockFile(File cheminFichier)throws IOException {
-		long taille = cheminFichier.length();
-		int nbBlock;
-		if ( taille < 4000) {
-			nbBlock = 1;
-		} else {
-			if (taille%4000 > 0) {
-				nbBlock = ((int) (taille/4000)+1);
-			} else {
-				nbBlock = (int) (taille/4000);
-			}
-		}
-		return nbBlock;
-	}
 
 /*
 	@Override

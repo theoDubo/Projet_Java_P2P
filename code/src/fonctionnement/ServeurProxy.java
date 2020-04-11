@@ -151,8 +151,11 @@ public class ServeurProxy implements Runnable {
 			// Le format du get attendu est le suivant : "get nomFichier 1 "
 			// ou "get nomFichier 1 4"
 			if (!chaine.equals("FIN")) {
-				if (chaine.indexOf(" ")<0)throw new Exception("invalid parameter number");
-				var=chaine.split(" ");
+				if (chaine.contains(" "))var=chaine.split(" ");
+				else {
+					var=new String[1];
+					var[0]=chaine;
+				}
 				switch(var[0]) {
 				case "get":
 					if (var.length==3) {
@@ -180,12 +183,24 @@ public class ServeurProxy implements Runnable {
 				case "ls":
 					ls();
 					break;
+				case "ChangeRoot":
+					eraseMemoryOfFile(var[1]);
+					break;
 
 				}
+				var=null;
 			}
 		}while (!chaine.equals("FIN"));
 		serveur.deconnexion(portServer);
 	}
+
+
+	private void eraseMemoryOfFile(String port) {
+		for (Map.Entry<Integer, Map<String,ArrayList<Integer>>> entry : serveur.registry.entrySet()) {
+			if (entry.getKey()==Integer.parseInt(port))entry.setValue(new HashMap<String,ArrayList<Integer>>());
+		}
+	}
+
 
 
 	private void ls() throws IOException {
@@ -199,16 +214,23 @@ public class ServeurProxy implements Runnable {
 				if (!check.contains(entry2.getKey()))check.add(entry2.getKey());
 			}
 		}
+		System.out.println("je suis ici");
 		writeArrayList(os,check);
-
 	}
 
 
 	public void writeArrayList(DataOutputStream os,ArrayList ar) throws IOException {
 		String chaine="";
 		String pass = ar.toString();
-		String[] pass2=pass.substring(1, pass.length()-1).split(",");
-		for (String s : pass2)chaine+=s+" ";
+		String pass2=pass.substring(1, pass.length()-1);
+		String[] pass3;
+		if (pass2.contains(","))pass3=pass2.split(",");
+		else {
+			pass3=new String[1];
+			pass3[0]=pass2;
+		}
+		for (String s : pass3)chaine+=s+" ";
+		System.out.println(chaine);
 		os.writeUTF(chaine);
 	}
 

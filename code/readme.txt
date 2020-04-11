@@ -16,7 +16,7 @@ de recevoir des demandes de machines distantes.
 L'avenir possible ******************************************************************************
 
 À l'heure actuelle le code ne permet pas d'accéder à des machines distantes une future amélioration peut être envisagée. 
-Le changement de racine peut empêcher le téléchargement de fichier depuis l'ancienne et la nouvelle racine il est donc préférable de ne pas l'utiliser pour le moment.
+La mise à jour n'est pas effectuée en cas d'ajout ou de suppression de fichier sur les serveurs.
 
 À noter ****************************************************************************************
 

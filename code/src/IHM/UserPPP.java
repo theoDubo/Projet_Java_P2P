@@ -21,7 +21,7 @@ public class UserPPP {
 		Thread tServeur = new Thread(serveur);
 		Thread tClient = new Thread(client);
 		tServeur.start();
-		tClient.start();
+		tClient.start();		
 	}
 
 
