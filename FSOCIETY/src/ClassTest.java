@@ -1,37 +1,31 @@
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class TEST {
+public class ClassTest {
 
 	public static void main(String[] args) {
+
+		// Declaration des variables relatives au fichier
 		String root="./dossierServeur/";
 		String nomFichier="fichier";
 		String nomF =root+nomFichier;
-		//ouverture du fichier
+
+		// Ouverture du fichier
 		File fich = new File(nomF);
-
-		//crÃ©ation du tampon de la taille du fichier (Ã  Ã©ventuellement remplacÃ© par datagramme par la suite)
-		//byte [] tableaudebytes  = new byte [(int)fich.length()];
-
+		
+		// Recuperation de l'emplacement du fichier
 		Path fileLocation = Paths.get(nomF);
 		try {
+			// Tableau de byte stockant les bytes du fichier que l'on affiche par la suite
 			byte[] data = Files.readAllBytes(fileLocation);
 			System.out.println(data.length);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
-
-
-
 }
 
