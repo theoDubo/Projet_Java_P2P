@@ -11,25 +11,22 @@ import java.util.Map;
 import fonctionnement.ServeurProxy;
 
 public class Serveur_ProxyCom{
-	private ServerSocket socket ;
+	// Declaration des variables
+	private ServerSocket socket;
 	private ArrayList<Integer> portsArray = new ArrayList<Integer>();
 	public Map <Integer, Map <String, ArrayList<Integer>>> registry = new HashMap <Integer, Map <String, ArrayList<Integer>>>();
-	
 	// Map ayant le port du socket server en cle et un objet en tant que valeur
 	public Map<Integer,PortsManagement> tracker = new HashMap<Integer,PortsManagement>();
-	
-	//------------------------------------------------------------------------------------------------addPort
-	//*** Methode permettant l'ajout du port a la liste des connexions
+
+	// Methode permettant l'ajout du port a la liste des connexions
 	public ArrayList<Integer> addPort(int port) {
 		this.portsArray.add(port);
+		// On ajoute le port et les donnees stockees dans la classe PortsManagement a la map tracker
 		this.tracker.put(port, new PortsManagement());
 		return this.portsArray;
 	}
 
-	//-------------------------------------------------------------------------------------------------updateTrackerValues
-	//*** Methode ayant pour but de calculer/mettre a jour le nombre d'upload
-	//***et de download d'une application
-
+	// Methode ayant pour but de calculer/mettre a jour le nombre d'upload et de download d'une application
 	public void updateTrackerValues(String portEmission, String portDestination) {
 		// Conversion des ports au format d'entiers
 		int portE = Integer.parseInt(portEmission);
@@ -41,41 +38,37 @@ public class Serveur_ProxyCom{
 			if(key==portD) tracker.get(key).setNbDestination();
 		}
 	}
-	
-	
-	//-------------------------------------------------------------------------------------------------Ecoute
-	//*** Methode principal de la classe, elle gere le proxy et cree les threads
-	//*** associes au differentes connexions
+
+	// Methode principale de la classe, elle gere le proxy et cree les threads associes aux differentes connexions
 	public void ecoute()throws Exception {
-		// on cree le socket server du manager
+		// Declaration et initialisation des variables
+		Socket sss;
+		// On cree le socket server du manager
 		socket=new ServerSocket(12345);
 		
-		Socket sss;
 		while(true) {
 			System.out.println("En attente ...");
+			// Acceptation de la connexion
 			sss = socket.accept(); 
 			System.out.println("connexion acceptee : "+sss);
-		
-			//une fois la connexion acceptee on recupere les moyens de communiquer
+			// Une fois la connexion acceptee on recupere les moyens de communiquer
 			DataInputStream entreeSocket = new DataInputStream(sss.getInputStream());
 			DataOutputStream os = new DataOutputStream(sss.getOutputStream());
 			int test = entreeSocket.readInt();
-			//on ajoute a la liste des serveurs le serveurs associes au client qui se connecte
+			// On ajoute a la liste des serveurs le serveur associe au client qui se connecte
 			this.addPort(test);
-			
-			//on lui renvoi la liste des servers connectes
+			// On lui renvoie la liste des servers connectes
 			ServerArray(os);
-			
-			//on lance le system de proxy
+			// On lance le systeme de proxy
 			Thread t = new Thread(new ServeurProxy(sss,this, this.portsArray.get(this.portsArray.size()-1)));
+			// Demarrage du thread
 			t.start();
 		}
 	}
-	
-//-------------------------------------------------------------------------------------------------------------------ServerArray
-//*** Methode permettant de renvoyer la liste des serveurs connectes au proxy
+
+	// Methode permettant de renvoyer la liste des serveurs connectes au proxy
 	public void ServerArray(DataOutputStream s) throws IOException {
-		// TODO Auto-generated method stub
+		// On envoie au socket les ports auxquels sont connectes les serveurs
 		if (portsArray.size()==1) {
 			s.writeInt(-1);
 		}
@@ -87,18 +80,18 @@ public class Serveur_ProxyCom{
 		}
 	}
 
-//--------------------------------------------------------------------------------------------------------------------Deconnexion
-//*** Methode permettant de gerer la deconnexion d'un des serveurs
+	// Methode permettant de gerer la deconnexion d'un des serveurs
 	public void deconnexion(int i) {
+		// On supprime le serveur deconnectes des differentes listes
 		this.portsArray.remove(this.portsArray.indexOf(i));
 		this.registry.remove(i);
 		this.tracker.remove(i);
 	}
 
-//----------------------------------------------------------------------------------------------------------------------MAIN
-//*** Methode d'execution de la classe
+	// Methode d'execution de la classe
 	public static void main(String[] arg0) {
 		try {
+			// Creation d'un serveur proxy de communication et lancement de l'ecoute
 			Serveur_ProxyCom serveur = new Serveur_ProxyCom();
 			serveur.ecoute();		
 		} catch (Exception e) {
